@@ -1,6 +1,7 @@
-# Go Gorutines
+# Go Goroutines
 
-## For exampple
+Example that shows principles of goroutines in golang
+
 ```
 package main
 
@@ -16,15 +17,8 @@ func main() {
 
 ```
 
-### часче всего люди думают что у нас значит цико вертитса и  в одельной горутине мы запускаем пайплайн и типа ми щас запустим 5 горутин и у нас виведутса цифри от нуля до четриох ну можеш бить не сразу потомучо мы синзронно запускаем и так деалее но ту и мы допускаем ошибку потомучто тут  мы функци не запускаем
-```
-go func() {
-	fmt.Println(i)
-}()
+People often think that we have a loop executing, and in a separate goroutine, we run a function that will print numbers from zero to four. But here we make a mistake because we are not running the function, we are just putting it in the scheduler queue. When the queue gets to it - only the scheduler knows, we cannot influence this. So, five iterations of the loop will pass faster than the scheduler can launch one of the goroutines. And even if one goroutine starts, the other four won't have time, so the loop will end and after that, we will have nothing. Since main is the entry point of the program, when it ends, the whole process ends. If the process ends, all its child elements (goroutines) also end. So our program will finish, and the other goroutines won't print anything.
 
-```
-
-### мы вего лиш кладем в очередь планировщика и когда очеердь дойдет до нее - извесно только планировщику мы на это повлиять не можем/ тому пять итераций цикла прокрууться бистрее чем планировщик созрее запустть  одну из горутин и даже если одну успееет запустить то остальние четире не успаее и получаеться что цикл заканчивееться и после него мы не умеием ничего  а поскольку main являетса точной входа в програму (енкрипоин) и когда он завершаетса то собственно у убиваеться процес. а если процес убиваться  всі дочірні його елементи ( горутини) тоже завертаються. то програмав нас завершиться  и остальнь горутини нічого не наркують
 
 ```
 
@@ -50,11 +44,11 @@ func main() {
 
 ```
 
-### тут ми можемо поставив тайм сліп, але в деяких випадках він може бути не достаній або збиточним для того, що вісити до тих пір пока не завершиться горутина прелумали вейт групу у вейт групу є три базоивих метота 
+We can use time.Sleep, but in some cases, it may be insufficient or excessive. To make the program wait until all goroutines finish, we use WaitGroup. WaitGroup has three basic methods:
 
-*** ед - добавить щочику інкрементить. В ед ми добаваляється на скільки збільнить
-*** доне - декрментить щотчик( зменчуж еденицу) в дан ми нічого не пропусуємо, дан завжди на одниницю зменшує
-*** вейт - при кожній ітеграціїзбільшух щоткік вайт грпу на одиницю
+- Add - increases the counter by a specified number.
+- Done - decreases the counter by one.
+- Wait - blocks until the counter becomes zero.
 
 ```
 func main() {
@@ -74,12 +68,9 @@ func main() {
 }
 ```
 
-вам може здатись можу вейт групу ми не запустили тут  и збільшили щотчік оскільки  він стартував,
-закінчили горутину написали done/ причина в тому, що ми не знаєм коли запуститься не названі функції в горуинах
-цикл пройде бисріше ніж пройде якась з горутин. щотчік буде на нулі , бо його ніхто не збільшував і вейт не заблокується
-і в нас все здохне
-```
+It may seem that we haven't started WaitGroup here and increased the counter since it started, finished the goroutine, wrote Done. The reason is that we don't know when the anonymous functions in the goroutines will start. The loop will pass faster than any goroutine can execute. The counter will be zero because no one has increased it, and Wait will not block, and everything will finish
 
+```
 func main() {
 	wg: sync.WaitGroup{}
 	wg.Add(1)
@@ -95,9 +86,8 @@ func main() {
 }
 ```
 
-також можемо уявити витуацію  якій знаємо скільки буде ітерацій ( в данно випадку 5)
-і в такому випадку код робочий, але це лише для нашого випадка, часьше логіка коду можн бути тяжча
-з якись правилами, різними точками вихода і тд.
+We can imagine a situation where we know how many iterations there will be (in this case, 5), and in that case, the code works. But this is only for our case, often the code logic can be more complex with different rules, exit points, etc
+
 ```
 func main() {
 	wg: sync.WaitGroup{}
@@ -107,7 +97,7 @@ func main() {
 		go func() {
 			fmt.Println(i)
 			if {
-				return -------- тут
+				return 
 			}
 
 			if {
@@ -122,9 +112,8 @@ func main() {
 }
 ```
 
-наприклад як тут, якщо ми так залишимо то ми наткнемосьна дедлок, це через те що ми тут вилітаємо і до дан просто не доходимо
-і виходить так, що горутина завершиться, а щотчік не зменчиться на одниицю і ми получим блокіовку
-ран тайм злобить і саже, що щотчік не ноль, а горутини всі сплять і вилетить панінка і буде дедлоек
+For example, like here. If we leave it like this, we will encounter a deadlock, because we exit here and just don't reach Done. It turns out that the goroutine finishes, but the counter doesn't decrease by one, and we get a block. The runtime will say that the counter is not zero, but all the goroutines have finished, and panic will occur and there will be a deadlock
+
 ```
 
 func main() {
@@ -143,9 +132,8 @@ func main() {
 ```
 
 
-на домомогу нам прийде девер, консрукція девер виповнюєтсья вкінці фнкції і без рідниці закінчиься функція панікою чи чисоь іншим
-дефер буде визваний. Але є пипадок при якому дефер не запуститься, як якщо ми визвемо число
-процес грогнеться і дефер не визветься 
+defer comes to our rescue. The defer statement is executed at the end of the function, regardless of whether the function finished with panic or something else. defer will be called. But there is a case where defer will not run. For example, if we call os.Exit(1) or log.Fatal()
+
 ```
 func main() {
 	wg: sync.WaitGroup{}
@@ -165,8 +153,7 @@ func main() {
 }
 ```
 
-наприклад при созроблці консольних утіліт в дефекарх можна завертать збір показатілєй: пресов, метрік. щоб локально щось відложувати
-і в цілому якщр збиражмо стистику/ в такому ваипадку дефер не буде виконаний
+For example, when developing console utilities, we can wrap metrics collection, logging, etc. in defer. And in general, if we collect statistics, in such cases, defer will not be executed
 
 
 ```
@@ -185,9 +172,8 @@ func main() {
 	wg.Wait()
 }
 ```
-в даному виадку дефер буде викони тільки втому разі якщо він буде в стеці
-
-розказать що таке стек ----
+In this case, defer will be executed only if it is on the stack.
+What is a stack ?
 
 ```
 
@@ -208,7 +194,7 @@ func main() {
 
 ```
 
-можем зрлбить так, і тоді в нас буде спер виконинй дефер за порядком. але це вигляжа страноо і тупо	
+We can do this, and then we will have defer executed in order. But this looks strange and unreasonable
 
 ```
 func main() {
@@ -231,7 +217,7 @@ func warszaw(wg *sync.WaitGroup) {
 }
 ```
 
-### ми також можемо предати аргументи, але справа в тому що ми маємо справу з замиканням. Предтавимо, що в нас є не названа функці, а щовнішня в який виконужться логіка тоді да, нам треба буде прокінуть вейт групу, але вейт групу обовязкого треба було покінуть по указатілям якщо би не прокінули про указалєтялм то вона би в нас просто скопірувалсь  і скопірувасяб той щотчік , який схований під нею i всі наші модиіуацію, визови дан і тд. вони би примінялись до копії, а оригінал на якому ми чекаєм  вейт не був би в курсі цих змін
+We can also pass arguments, but the thing is, we are dealing with closures. Imagine that we don't have an anonymous function but an external function where the logic is executed, then yes, we will need to pass WaitGroup. But WaitGroup must be passed by pointer. If we did not pass by pointer, it would just copy, and the counter hidden under it would also be copied. And all our modifications, calls to Done, etc. would apply to the copy, and the original on which we are waiting Wait would not be aware of these changes
 
 ```
 func main() {
@@ -251,65 +237,263 @@ func main() {
 ```
 
 
-### але оскільки в нас функція визиваєтсья в середині функції - в нас нема потреба це все предавать, бо оскільки в нас присутнж замикання замикання це коли  в  середині однієї функції  використовуєо перемінну, яка обявленна з зовні цієї функції і ця перміна defer wg.Done() по стандарту мови захватуєтсь в середину по указатєлю, що в свю чергу ніякої копії не створює це на сдуже сильно устраює. Але у випадку  fmt.Println(i)  - нас це не устраює i - це щотік числа, який мінється в черзі всіх ітерацій це одна і так сама переменна, яка має одни і той самий адрес (і) оскліьки ми маємо тут справу з замиканням, у нас у пайплайн  прокідуєтсья іменно по указатжлю значення (і) але є нюанс - горутини почнуть запускаютсья після всіх ітерацій  і щначення по адресу (і) у нас лежить останнє і тоді але всю або частина  горутн виведет типо останнє значення щотчіка  останнє значення у цикла в даному випадку не завжди буде 4 у нас коли щотщік доходить до 4, він підкручуєт ітераіію , адьше він інрементиться  становиться 5 і тілкьи після того як він став 5  ми розуміємо зо умови циклу не виконуються  i < 5  і ухдим з цього цикла. але (і) остається 5  тому більша части горутин виведе 5 . канжшно якась горутина веведе 3 або шось інше, бо може вспіть бистріше ніж ітерацію цикла ащкінчиться. В нас є два шляхи вирішення цієї проблеми зробить копію, ми в безіменну фунцію принімаємо (і) і водить, що оце (і) е то (і), а це (і)
+
+Go Goroutines
+Example
+go
+Копіювати код
+package main
+
+import "fmt"
+
+func main() {
+    for i := 0; i < 5; i++ {
+        go func() {
+            fmt.Println(i)
+        }()
+    }
+}
+People often think that we have a loop executing, and in a separate goroutine, we run a function that will print numbers from zero to four. But here we make a mistake because we are not running the function, we are just putting it in the scheduler queue. When the queue gets to it - only the scheduler knows, we cannot influence this. So, five iterations of the loop will pass faster than the scheduler can launch one of the goroutines. And even if one goroutine starts, the other four won't have time, so the loop will end and after that, we will have nothing. Since main is the entry point of the program, when it ends, the whole process ends. If the process ends, all its child elements (goroutines) also end. So our program will finish, and the other goroutines won't print anything.
+go
+Копіювати код
+func main() {
+    for i := 0; i < 5; i++ {
+        go func() {
+            fmt.Println(i)
+        }()
+    }
+
+    time.Sleep(time.Second)
+}
+We can use time.Sleep, but in some cases, it may be insufficient or excessive. To make the program wait until all goroutines finish, we use WaitGroup. WaitGroup has three basic methods:
+Add - increases the counter by a specified number.
+Done - decreases the counter by one.
+Wait - blocks until the counter becomes zero.
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    for i := 0; i < 5; i++ {
+        wg.Add(1)
+        go func() {
+            fmt.Println(i)
+            wg.Done()
+        }()
+    }
+
+    wg.Wait()
+}
+It may seem that we haven't started WaitGroup here and increased the counter since it started, finished the goroutine, wrote Done. The reason is that we don't know when the anonymous functions in the goroutines will start. The loop will pass faster than any goroutine can execute. The counter will be zero because no one has increased it, and Wait will not block, and everything will finish.
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(1)
+
+    for i := 0; i < 5; i++ {
+        go func() {
+            fmt.Println(i)
+            wg.Done()
+        }()
+    }
+
+    wg.Wait()
+}
+We can imagine a situation where we know how many iterations there will be (in this case, 5), and in that case, the code works. But this is only for our case, often the code logic can be more complex with different rules, exit points, etc.
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func() {
+            fmt.Println(i)
+            if true {
+                return // here
+            }
+
+            if true {
+                return
+            }
+
+            wg.Done()
+        }()
+    }
+
+    wg.Wait()
+}
+For example, like here. If we leave it like this, we will encounter a deadlock, because we exit here and just don't reach Done. It turns out that the goroutine finishes, but the counter doesn't decrease by one, and we get a block. The runtime will say that the counter is not zero, but all the goroutines have finished, and panic will occur and there will be a deadlock.
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func() {
+            defer wg.Done()
+            fmt.Println(i)
+        }()
+    }
+
+    wg.Wait()
+}
+defer comes to our rescue. The defer statement is executed at the end of the function, regardless of whether the function finished with panic or something else. defer will be called. But there is a case where defer will not run. For example, if we call os.Exit(1) or log.Fatal().
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func() {
+            fmt.Println(i)
+            os.Exit(1)
+            log.Fatal()
+            defer wg.Done()
+        }()
+    }
+
+    wg.Wait()
+}
+For example, when developing console utilities, we can wrap metrics collection, logging, etc. in defer. And in general, if we collect statistics, in such cases, defer will not be executed.
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func() {
+            fmt.Println(i)
+            defer wg.Done()
+        }()
+    }
+
+    wg.Wait()
+}
+In this case, defer will be executed only if it is on the stack.
+What is a stack?
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func() {
+            defer fmt.Println(i) // second
+            defer wg.Done() // first
+        }()
+    }
+
+    wg.Wait()
+}
+We can do this, and then we will have defer executed in order. But this looks strange and unreasonable.
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func(wg *sync.WaitGroup) {
+            defer wg.Done()
+            fmt.Println(i)
+        }(&wg)
+    }
+
+    wg.Wait()
+}
+We can also pass arguments, but the thing is, we are dealing with closures. Imagine that we don't have an anonymous function but an external function where the logic is executed, then yes, we will need to pass WaitGroup. But WaitGroup must be passed by pointer. If we did not pass by pointer, it would just copy, and the counter hidden under it would also be copied. And all our modifications, calls to Done, etc. would apply to the copy, and the original on which we are waiting Wait would not be aware of these changes.
+go
+Копіювати код
+func main() {
+    var wg sync.WaitGroup
+
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func(wg *sync.WaitGroup) {
+            defer wg.Done()
+            fmt.Println(i)
+        }(&wg)
+    }
+
+    wg.Wait()
+}
+But since our function is called inside another function, we don't need to pass all this because we have a closure. A closure is when a variable declared outside the function is used inside the function. And this variable defer wg.Done() by language standards is captured inside by pointer, which, in turn, does not create any copy, and this suits us very well. But in the case of fmt.Println(i) it does not suit us. i is a loop counter that changes in the queue of all iterations. This is the same variable that has the same address. Since we are dealing with a closure here, we have the value i passed by pointer in the pipeline. But there's a nuance - the goroutines will start after all iterations, and the value at the address i is the last one. And then most goroutines will print the last value of the counter. The last value of the loop in this case will not always be 4. When the counter reaches 4, it increments the iteration, then it increments, becomes 5, and only after it becomes 5 do we understand that the loop condition is not met i < 5, and we exit the loop. But i remains 5. So most goroutines will print 5. Of course, some goroutine will print 3 or something else because it can be faster than the loop iteration ends. We have two ways to solve this problem: make a copy of the variable.
 
 
 ```
 func main() {
-	wg: sync.WaitGroup{} 
+    var wg sync.WaitGroup
 
-	wg.Add(5)
-	for i := 0; i < 5; i++ { - це вже не це 
-		go func(i int) {  --- а це 
-			defer wg.Done() 
-			fmt.Println(i)  - оце ай
+    wg.Add(5)
 
-		}(i)
-	}
-	wg.Wait()
+    for i := 0; i < 5; i++ {
+        go func(i int) {
+            defer wg.Done()
+            fmt.Println(i)
+        }(i)
+    }
+
+    wg.Wait()
 }
+
 ```
+We accept i into the anonymous function and print it. Or create a local variable with the same name and copy this value.
 
-
-2)
 
 ```
 func main() {
-	wg: sync.WaitGroup{} 
+    var wg sync.WaitGroup
 
-	wg.Add(5)
-	for i := 0; i < 5; i++ {  
-		i := i
+    wg.Add(5)
 
-		go func(i int) {  
-			defer wg.Done() 
-			fmt.Println(i)  
+    for i := 0; i < 5; i++ {
+        i := i
+        go func() {
+            defer wg.Done()
+            fmt.Println(i)
+        }()
+    }
 
-		}()
-	}
-	wg.Wait()
+    wg.Wait()
 }
+
 ```
 
 
-### ну в середині ітерації цикала створюємо локальну перемінну  з тим самим іменем і копіруємо  це щначення  і назватуєм  указатель не цієї ай for i := 0; i < 5; i++ { , а цієї  i := i
+Inside the loop iteration, create a local variable with the same name and copy the value, and refer to this local variable
 
 ----
 ```
 func main() {
-	wg: sync.WaitGroup{} 
+    var wg sync.WaitGroup
 
-	wg.Add(5)
-	for i := 0; i < 5; i++ {  
-		go func(i int) {  
-			defer wg.Done() 
-			fmt.Println(i)  
-		}(i)
-	}
-	wg.Wait()
+    wg.Add(5)
+
+    for i := 0; i < 5; i++ {
+        go func(i int) {
+            defer wg.Done()
+            fmt.Println(i)
+        }(i)
+    }
+
+    wg.Wait()
 }
 ```
 
-### он в на сробочий ваірант, який виведе цифри від 0 до 4 в робочому стані с таокм увипаду ніякого оверхеду не буде на очікуванні, вейт буде вісіть пока всі горутини це завершать свою роботу
+Here is the working version that will print numbers from 0 to 4 in the correct order. In this case, there will be no overhead on waiting, Wait will wait until all goroutines complete their work
 
 	

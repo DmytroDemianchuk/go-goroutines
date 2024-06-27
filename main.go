@@ -6,15 +6,16 @@ import (
 )
 
 func main() {
-wg:
-	sync.WaitGroup{}
+	var wg sync.WaitGroup
 
-	wg.Add(5)
 	for i := 0; i < 5; i++ {
-		go func(i int) {
+		i := i // Create a new instance of i for each iteration
+		wg.Add(1)
+		go func() {
 			defer wg.Done()
 			fmt.Println(i)
-		}(i)
+		}()
 	}
+
 	wg.Wait()
 }
